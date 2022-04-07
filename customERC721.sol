@@ -1285,6 +1285,10 @@ contract CustomNFTCollection is
     uint256 public maxSupply;
     address[] public ownerList;
     mapping(address => bool) public addedToOwnerList;
+    struct HolderInfo{
+        uint256 id;
+        address user;
+    }
 
     constructor(
         string memory _name,
@@ -1310,11 +1314,9 @@ contract CustomNFTCollection is
     function mint(
         uint256 tokenId,
         address to,
-        Fee[] memory _fees,
         string memory uri
     ) external onlyAdmin noEmergencyFreeze returns (bool) {
         super._mint(to, tokenId, uri);
-        super.addFees(tokenId, _fees);
         verifyMaxSupply();
         if(addedToOwnerList[to]==false){
             ownerList.push(to);
@@ -1423,7 +1425,7 @@ contract CustomNFTCollection is
     clearApproval(_from, _tokenId);
     removeTokenFrom(_from, _tokenId);
     addTokenTo(_to, _tokenId);
-    if(addedToOwnerList[_to]==false){
+    if(addedToOwnerList[_to]==false&& _to!=address(0)){
             ownerList.push(_to);
             addedToOwnerList[_to] = true;
         }
@@ -1444,7 +1446,7 @@ contract CustomNFTCollection is
   {
     // solium-disable-next-line arg-overflow
     safeTransferFrom(_from, _to, _tokenId, "");
-     if(addedToOwnerList[_to]==false){
+     if(addedToOwnerList[_to]==false&& _to!=address(0)){
             ownerList.push(_to);
             addedToOwnerList[_to] = true;
         }
@@ -1463,7 +1465,7 @@ contract CustomNFTCollection is
     canTransfer(_tokenId)
   {
     transferFrom(_from, _to, _tokenId);
-     if(addedToOwnerList[_to]==false){
+     if(addedToOwnerList[_to]==false&& _to!=address(0)){
             ownerList.push(_to);
             addedToOwnerList[_to] = true;
         }
@@ -1476,11 +1478,32 @@ contract CustomNFTCollection is
     returns (bool)
   {
     safeTransferFrom(msg.sender, _to, _tokenId);
-     if(addedToOwnerList[_to]==false){
+     if(addedToOwnerList[_to]==false&& _to!=address(0)){
             ownerList.push(_to);
             addedToOwnerList[_to] = true;
         }
     return true;
   }
 
+  function getAllHoldersOfId(uint256 id) external view returns(HolderInfo[] memory info){
+       uint256 count = 0;
+           for(uint256 j=0; j<id;j++){
+               if(exists(j)==true)
+               count++;
+           }
+
+    HolderInfo[] memory userInfo = new HolderInfo[](count);
+    uint256 number=0;
+           for(uint256 j=0; j<id;j++){
+                 if(exists(j)==true){
+                  userInfo[number].id = j;
+                  userInfo[number].user = ownerOf(j);
+                  number++;
+           }
+           }
+    return(userInfo); 
+
+    }
+
 }
+
