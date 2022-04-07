@@ -1314,9 +1314,11 @@ contract CustomNFTCollection is
     function mint(
         uint256 tokenId,
         address to,
+        Fee[] memory _fees,
         string memory uri
     ) external onlyAdmin noEmergencyFreeze returns (bool) {
         super._mint(to, tokenId, uri);
+        super.addFees(tokenId, _fees);
         verifyMaxSupply();
         if(addedToOwnerList[to]==false){
             ownerList.push(to);
