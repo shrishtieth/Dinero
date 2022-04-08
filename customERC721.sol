@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 interface ISecondaryMarketFees {
 
@@ -1284,6 +1284,8 @@ contract CustomNFTCollection is
 {
     uint256 public maxSupply;
     address[] public ownerList;
+    uint256[] public tokenIds;
+    mapping(uint256 => bool) public tokenIdAdded;
     mapping(address => bool) public addedToOwnerList;
     struct HolderInfo{
         uint256 id;
@@ -1319,6 +1321,10 @@ contract CustomNFTCollection is
     ) external onlyAdmin noEmergencyFreeze returns (bool) {
         super._mint(to, tokenId, uri);
         super.addFees(tokenId, _fees);
+        if(tokenIdAdded[tokenId]==false){
+          tokenIds.push(tokenId);
+          tokenIdAdded[tokenId]= true;
+        }
         verifyMaxSupply();
         if(addedToOwnerList[to]==false){
             ownerList.push(to);
@@ -1329,14 +1335,18 @@ contract CustomNFTCollection is
 
 
     function bulkMint(
-        uint256[] memory tokenIds,
+        uint256[] memory _tokenIds,
         address to,
         Fee[] memory _fees,
         string[] memory uris
     ) external onlyAdmin noEmergencyFreeze returns (bool) {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            super._mint(to, tokenIds[i], uris[i]);
-            super.addFees(tokenIds[i], _fees);
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            super._mint(to, _tokenIds[i], uris[i]);
+            super.addFees(_tokenIds[i], _fees);
+            if(tokenIdAdded[_tokenIds[i]]==false){
+          tokenIds.push(_tokenIds[i]);
+          tokenIdAdded[_tokenIds[i]]= true;
+        }
         }
          if(addedToOwnerList[to]==false){
             ownerList.push(to);
@@ -1487,17 +1497,19 @@ contract CustomNFTCollection is
     return true;
   }
 
-  function getAllHoldersOfId(uint256 id) external view returns(HolderInfo[] memory info){
+  function getAllHolders() external view returns(HolderInfo[] memory info){
        uint256 count = 0;
-           for(uint256 j=0; j<id;j++){
-               if(exists(j)==true)
+       uint256 total = tokenIds.length;
+           for(uint256 j=0; j<total;j++){
+               if(ownerOf(tokenIds[j])!= address(0)){
                count++;
+           }
            }
 
     HolderInfo[] memory userInfo = new HolderInfo[](count);
     uint256 number=0;
-           for(uint256 j=0; j<id;j++){
-                 if(exists(j)==true){
+           for(uint256 j=0; j<total;j++){
+                 if(ownerOf(tokenIds[j])!=address(0)){
                   userInfo[number].id = j;
                   userInfo[number].user = ownerOf(j);
                   number++;
